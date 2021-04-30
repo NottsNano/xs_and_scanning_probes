@@ -13,7 +13,7 @@ class NoughtsAndCrossesEnv(gym.Env):
         self.board = None
         self.action_space = gym.spaces.Discrete(9)  # 9 squares in board
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=[9], dtype=np.int)
-        self.player_turn = None
+        self.current_player_num = None
 
         if opponent in self.opponents:
             self.opponent = opponent
@@ -29,20 +29,20 @@ class NoughtsAndCrossesEnv(gym.Env):
 
     def reset(self):
         self.board = np.zeros(9, dtype=int)
-        self.player_turn = np.random.choice([-1, 1])  # -1 = "X", 1="O"
+        self.current_player_num = 0#np.random.choice([-1, 1])  # -1 = "X", 1="O"
 
         return self.board
 
     def swap_player(self):
-        self.player_turn = -self.player_turn
+        self.current_player_num = -self.current_player_num
 
     def step(self, action):
         if self.is_move_legitimate(position=action):
-            self.board[action] = self.player_turn
+            self.board[action] = self.current_player_num
             if self.is_game_over():
                 reward = 1
                 done = True
-                winner = self.symbols[self.player_turn] + "Wins"
+                winner = self.symbols[self.current_player_num] + "Wins"
             else:
                 reward = 0
                 done = False

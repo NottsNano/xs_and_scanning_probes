@@ -1,0 +1,11 @@
+
+DEBUG = 10
+INFO = 20
+WARN = 30
+ERROR = 40
+DISABLED = 50
+
+LOGDIR = "SIMPLE/logs"
+RESULTSPATH = 'SIMPLE/viz/results.csv'
+TMPMODELDIR = "SIMPLE/zoo/tmp"
+MODELDIR = "SIMPLE/zoo/pretrained"

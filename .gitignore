@@ -1,2 +1,4 @@
 .idea
-SIMPLE
+SIMPLE/logs/*
+SIMPLE/zoo
+data
