@@ -110,7 +110,7 @@ class TicTacToeEnv(gym.Env):
         # elif action not in np.argwhere(self.legal_actions): # move is illegal
         #     reward = [10, 10]
         #     reward[self.current_player_num] = -10
-        #     done = True
+        #     is_episode_done = True
         else:
             board[action] = self.current_player.token
             self.turns_taken += 1
