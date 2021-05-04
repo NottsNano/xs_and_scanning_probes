@@ -1,7 +1,4 @@
 import os
-from time import sleep
-
-import numpy as np
 import tensorflow as tf
 
 from SIMPLE.utils.agents import Agent
@@ -63,8 +60,9 @@ class SelfPlayTester:
         self.reset()
         while not self.is_episode_done:
             self.step()
+        self._announce_winner()
 
-    def announce_winner(self):
+    def _announce_winner(self):
         if self.env.check_game_over()[0] == 0 and self.env.check_game_over()[0] == True:
             print("Draw!")
         else:

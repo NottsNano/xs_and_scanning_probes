@@ -33,7 +33,7 @@ params = {'gamma': 0.99
     , 'tensorboard_log': SIMPLE.config.LOGDIR
           }
 
-model = PPO1.load('SIMPLE/zoo/pretrained/tictactoe/base.zip', env, **params)
+model = PPO1.load('../SIMPLE/zoo/pretrained/tictactoe/base.zip', env, **params)
 # model = PPO1(env, **params)
 
 callback_args = {

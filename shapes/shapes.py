@@ -73,5 +73,6 @@ class DataShape(object):
     def draw(self, pos):
         """Draws the object, centered at pos"""
         pass
+    # assert pos is int not mtrx coord!
 
 
