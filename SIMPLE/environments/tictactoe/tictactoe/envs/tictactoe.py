@@ -120,9 +120,9 @@ class TicTacToeEnv(gym.Env):
             reward[self.current_player_num] = r
 
         if self.current_player_num == 0:
-            self.player_0_last_move = action
+            self.player_0_last_move = int(action)
         else:
-            self.player_1_last_move = action
+            self.player_1_last_move = int(action)
 
         self.done = done
 
@@ -143,6 +143,8 @@ class TicTacToeEnv(gym.Env):
     def _make_axis(self, ax=None):
         if ax is None:
             self.fig, self.ax = plt.subplots(1, 1)
+        else:
+            self.ax = ax
 
         self.xplot, = self.ax.plot([], [], 'x', linestyle=None, markersize=20)
         self.oplot, = self.ax.plot([], [], 'o', linestyle=None, markersize=20, markerfacecolor='none')
@@ -162,6 +164,8 @@ class TicTacToeEnv(gym.Env):
 
         self.ax.set_xticks([])
         self.ax.set_yticks([])
+
+        self.ax.set_aspect('equal', adjustable='box')
 
     def render(self, mode='human', close=False, verbose=True):
         logger.debug('')

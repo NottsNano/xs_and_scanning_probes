@@ -3,15 +3,9 @@ from typing import Tuple
 import json
 from matplotlib import pyplot as plt
 import ast
+from nOmicron.mate import objects as mo
 
-
-# Routine:
-# Locate centres of
-# Desorb hydorgen
-
-# Draw grid
-
-# Function to draw line at vertices (relative to 512x512 grid for simplicity)
+from utils import ind2mtrx
 
 
 class DataPoint(object):
@@ -19,15 +13,30 @@ class DataPoint(object):
         self.pos = pos
         self.desorb_on_approach = desorb_on_approach
 
+    def move_to_point(self, desorb_voltage=None):
+        mo.experiment.pause()
+
+        old_voltage = mo.gap_voltage_control.Voltage()
+        if self.desorb_on_approach and not desorb_voltage:
+            raise ValueError("If desorbing, descorb_voltage must be set")
+
+        if self.desorb_on_approach:
+            mo.gap_voltage_control.Voltage(desorb_voltage)
+
+        mo.xy_scanner.Target_Position(ind2mtrx(self.pos))
+        mo.xy_scanner.move()
+
+        mo.gap_voltage_control.Voltage(old_voltage)
+
 
 class DataShape(object):
-    def __init__(self, object_shape: str, shape_directory="data/"):
+    def __init__(self, object_shape: str, centre_offset=[0, 0], shape_directory="shapes/data/"):
         self.shape_directory = shape_directory
         self.object_shape = object_shape
 
         self.datafile = None
 
-        self.centre_offset = [0, 0]
+        self.centre_offset = np.array(centre_offset)
         self.size = None
         self.datapoints = []
 
@@ -39,7 +48,7 @@ class DataShape(object):
             self.datafile = json.load(f)
 
     def prepare(self):
-        self.centre_offset = self.datafile["centre_offset"]
+        self.centre_offset += self.datafile["centre_offset"]
         self.size = self.datafile["size"]
         for point in self.datafile["all_points"]:
             if np.any(np.array(point["datapoint"]) < 0) or np.all(np.array(point["datapoint"]) > self.size):
@@ -47,22 +56,24 @@ class DataShape(object):
             self._add_datapoint(point["datapoint"], ast.literal_eval(point["desorb"]))
 
     def _add_datapoint(self, xy, desorb_on_approach):
-        self.datapoints.append(DataPoint(xy, desorb_on_approach))
+        self.datapoints.append(DataPoint(xy+self.centre_offset, desorb_on_approach))
 
     def _make_axs(self, ax):
         if not ax:
             fig, ax = plt.subplots(1, 1)
+            ax.set_title(self.object_shape)
         padding = self.size // 50
         ax.set_xlim(-padding, self.size + padding)
         ax.set_ylim(-padding, self.size + padding)
-        ax.set_title(self.object_shape)
-        ax.set_aspect(1)
+        ax.set_xticks([])
+        ax.set_yticks([])
 
         return ax
 
-    def draw_in_stm(self, centre: np.ndarray([float, float])):
-        self.centre_offset = centre
-        raise NotImplementedError
+    def draw_in_stm(self, desorb_voltage):
+        for datapoint in self.datapoints:
+            pass
+            # datapoint.move_to_point(desorb_voltage)
 
     def plot(self, ax=None):
         if ax is None:
@@ -75,5 +86,12 @@ class DataShape(object):
                 ax.plot(xs, ys, 'g')
             else:
                 ax.plot(xs, ys, 'r')
+
+        ax.set_aspect('equal', adjustable='box')
+        # padding = self.size // 50
+        # ax.set_xlim(-padding, self.size + padding)
+        # ax.set_ylim(-padding, self.size + padding)
+        # ax.set_xticks([])
+        # ax.set_yticks([])
 
 

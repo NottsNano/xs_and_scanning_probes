@@ -1,7 +1,6 @@
 import warnings
 
-from nOmicron.microscope import IO, xy_scanner, black_box
-from typing import Tuple
+# from nOmicron.microscope import IO, xy_scanner, black_box
 
 from nOmicron.utils.plotting import nanomap
 
@@ -9,6 +8,8 @@ from model.self_play_test import SelfPlayTester
 from shapes.shapes import DataShape
 from matplotlib import pyplot as plt
 import numpy as np
+
+from utils import action2ind
 
 
 class STMTicTacToe:
@@ -35,7 +36,7 @@ class STMTicTacToe:
         """
 
         # Connect to the probe
-        IO.connect()
+        # IO.connect()
 
         # STM parameters
         self.scan_bias = scan_bias
@@ -48,8 +49,8 @@ class STMTicTacToe:
         self.game_args = {"player_1_type": player_1_type,
                           "player_2_type": player_2_type,
                           "first_player": first_player,
-                          "render_mode": render_mode}
-        self.old_board = None
+                          "render_mode": render_mode,
+                          "auto_render": False}
 
         # Others
         self.fig = None
@@ -58,45 +59,49 @@ class STMTicTacToe:
         self.reset()
 
     def play_game(self):
-        pass
-
-        # Step agent
-        # If human, action = find_human_move, pass to self_play_test.step(action)
-
-        # Draw action in STM
+        while not self.game.is_episode_done:
+            self.step()
+        self.game._announce_winner()
 
     def step(self):
-        # Get human action
-        if self.game_args["player_1_type"] == "human":
-            action = self.find_human_move()
+        action = self.game.player_0.choose_action(self.game.env, choose_best_action=True, mask_invalid_actions=True)
 
-        self.draw(DataShape("cross"), centre=None)
         self.game.step(action)
-        self.draw(DataShape("nought"), centre=None)
+
+        cross_move = DataShape("cross", centre_offset=action2ind(self.game.env.player_0_last_move))
+        cross_move.draw_in_stm(self.passivate_setpoint)
+        cross_image = self.get_scan()
+        self.render(cross_image, cross_move)
+
+        nought_move = DataShape("nought", centre_offset=action2ind(self.game.env.player_1_last_move))
+        nought_move.draw_in_stm(self.passivate_setpoint)
+        nought_image = self.get_scan()
+        self.render(nought_image, nought_move)
 
     def reset(self):
         # Reset env
         self.game = SelfPlayTester(**self.game_args)
 
         # Coarse move & approach
-        black_box.backward()
+        # black_box.backward()
+        #
+        # rand_coarse_move = np.random.rand()
+        # if 0 <= rand_coarse_move <= 0.25:
+        #     move_dir = black_box.x_minus
+        # elif 0.25 < rand_coarse_move <= 0.5:
+        #     move_dir = black_box.x_plus
+        # elif 0.5 < rand_coarse_move <= 0.75:
+        #     move_dir = black_box.y_minus
+        # else:
+        #     move_dir = black_box.y_plus
+        # for i in range(self.num_coarse_moves_on_reset):
+        #     move_dir()
 
-        rand_coarse_move = np.random.rand()
-        if 0 <= rand_coarse_move <= 0.25:
-            move_dir = black_box.x_minus
-        elif 0.25 < rand_coarse_move <= 0.5:
-            move_dir = black_box.x_plus
-        elif 0.5 < rand_coarse_move <= 0.75:
-            move_dir = black_box.y_minus
-        else:
-            move_dir = black_box.y_plus
-        for i in range(self.num_coarse_moves_on_reset):
-            move_dir()
-
-        black_box.auto_approach()
+        # black_box.auto_approach()
 
         # Take a single scan
-        prelim_scan = self.get_scan()
+        # prelim_scan = self.get_scan()
+        # plt.imshow(prelim_scan, cmap=nanomap, axs=self.axs[2])
 
         # Check if flat
         is_flat = True
@@ -105,34 +110,37 @@ class STMTicTacToe:
             self.reset()
 
         # Draw grid
-        self.draw(DataShape("board"), centre=[512 // 2, 512 // 2])
+        grid = DataShape("board")
+        grid.draw_in_stm(desorb_voltage=self.passivate_setpoint)
 
         # Setup figs
         self.fig, self.axs = plt.subplots(1, 3)
+        self.axs[1].invert_yaxis()
+        self.axs[1].set_xticks([])
+        self.axs[1].set_yticks([])
 
-        self.game.env._make_axs(ax=self.axs[1])
+        self.game.env._make_axis(ax=self.axs[0])
         self.game.env.fig = self.fig
 
-        self.render()
+        self.render(scan_data=self.get_scan(), piece=grid)
 
-    def get_scan(self):
-        return xy_scanner.get_xy_scan("Z", "Forward", "Up")
+    @staticmethod
+    def get_scan():
+        return np.random.rand(512, 512)
+        # return xy_scanner.get_xy_scan("Z", "Forward", "Up")
 
     def find_human_move(self):
         # Locate centres of grids
-        pass
+        return int(input())
 
-    def draw(self, shape_to_draw: DataShape, centre: np.ndarray([int, int])):
-        """Draws the object, centered at pos"""
-
-        pass
-
-    def render(self, data):
-        self.game.render()
-        self.axs[0].imshow(data, cmap=nanomap)
-        # Draw DataShape.plot()
+    def render(self, scan_data: np.ndarray, piece: DataShape):
+        self.game.env.render()
+        piece.plot(ax=self.axs[1])
+        self.axs[2].imshow(scan_data, cmap=nanomap)
+        plt.pause(0.001)
 
 
 if __name__ == '__main__':
     # Parse args
-    game = STMTicTacToe()
+    game = STMTicTacToe(0,0,0)
+    game.play_game()

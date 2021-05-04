@@ -1,11 +1,11 @@
 import os
 import tensorflow as tf
-import numpy as np
 
 from SIMPLE.utils.agents import Agent
 from SIMPLE.utils.files import load_model
 from SIMPLE.utils.register import get_environment
 from SIMPLE.utils.selfplay import selfplay_wrapper
+
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -15,7 +15,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 class SelfPlayTester:
     def __init__(self, player_1_type="human", player_2_type="best", first_player="player_1", render_mode="plot",
-                 rand_seed=1234):
+                 auto_render=True, rand_seed=1234):
         """Plays the tic tac toe env
 
         Parameters
@@ -28,6 +28,8 @@ class SelfPlayTester:
             Who goes first. One of 'player_1' (default), 'player_2', 'random'
         render_mode: str or None
             How to render the game. One of 'plot' (default), 'print', None
+        auto_render: bool
+            Update the render automatically (default, True), or only when explicitly called
         rand_seed: int
             Seed for the random number generator. Default 1234
         """
@@ -37,6 +39,7 @@ class SelfPlayTester:
         self.player_2_type = player_2_type
         self.first_player = first_player
         self.render_mode = render_mode
+        self.auto_render = auto_render
         self.rand_seed = rand_seed
         self.player_0 = None
         self.is_episode_done = False
@@ -75,15 +78,15 @@ class SelfPlayTester:
         self.env.reset()
 
     def step(self, action=None):
-        self.env.render()
-
+        if self.auto_render:
+            self.env.render()
 
         if action is None:
             action = self.player_0.choose_action(self.env, choose_best_action=True, mask_invalid_actions=True)
 
         obs, reward, self.is_episode_done, _ = self.env.unwrapped.step(action)
 
-        if self.is_episode_done:
+        if self.is_episode_done and self.auto_render:
             self.env.render()
 
 

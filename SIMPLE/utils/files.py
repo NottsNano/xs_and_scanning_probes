@@ -10,7 +10,7 @@ from stable_baselines import logger
 from stable_baselines.ppo1 import PPO1
 
 import SIMPLE.config
-from utils.register import get_network_arch
+from SIMPLE.utils.register import get_network_arch
 
 
 def write_results(players, game, games, episode_length):
