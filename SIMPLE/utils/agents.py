@@ -59,7 +59,7 @@ class Agent:
                     np.square((co_ords[0] - all_sites[:, 0])) + np.square((co_ords[1] - all_sites[:, 1])))
                 action = np.argmin(all_sites_dist)
                 sleep(0.2)
-            return action
+            return int(action)
         elif self.name == 'rules':
             action_probs = np.array(env.rules_move())
             value = None
@@ -82,5 +82,4 @@ class Agent:
             action = sample_action(action_probs)
             logger.debug(f'Sampled action {action} chosen')
 
-
-        return action
+        return int(action)

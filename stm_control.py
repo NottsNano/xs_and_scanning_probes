@@ -66,12 +66,12 @@ class STMTicTacToe:
     def step(self):
         action = self.game.player_0.choose_action(self.game.env, choose_best_action=True, mask_invalid_actions=True)
 
-        self.game.step(action)
-
-        cross_move = DataShape("cross", centre_offset=action2ind(self.game.env.player_0_last_move))
+        cross_move = DataShape("cross", centre_offset=action2ind(action))
         cross_move.draw_in_stm(self.passivate_setpoint)
         cross_image = self.get_scan()
         self.render(cross_image, cross_move)
+
+        self.game.step(action)
 
         nought_move = DataShape("nought", centre_offset=action2ind(self.game.env.player_1_last_move))
         nought_move.draw_in_stm(self.passivate_setpoint)
@@ -115,6 +115,9 @@ class STMTicTacToe:
 
         # Setup figs
         self.fig, self.axs = plt.subplots(1, 3)
+        self.axs[0].set_title("Agent game")
+        self.axs[1].set_title("Desorption path")
+        self.axs[2].set_title("STM image")
         self.axs[1].invert_yaxis()
         self.axs[1].set_xticks([])
         self.axs[1].set_yticks([])
