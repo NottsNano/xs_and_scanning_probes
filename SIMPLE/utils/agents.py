@@ -21,8 +21,8 @@ def mask_actions(legal_actions, action_probs):
     return masked_action_probs
 
 
-class Agent():
-    def __init__(self, name, model=None):
+class Agent:
+    def __init__(self, name, model=None, interact_with_probe=False):
         self.name = name
         self.id = self.name + '_' + ''.join(random.choice(string.ascii_lowercase) for x in range(5))
         self.model = model
@@ -40,7 +40,7 @@ class Agent():
                 while True:
                     try:
                         action = int(input('\nPlease choose an action: '))
-
+                        break
                     except ValueError:
                         pass
             else:

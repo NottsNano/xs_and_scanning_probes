@@ -1,5 +1,6 @@
 import os
 import tensorflow as tf
+import numpy as np
 
 from SIMPLE.utils.agents import Agent
 from SIMPLE.utils.files import load_model
@@ -40,6 +41,8 @@ class SelfPlayTester:
         self.player_0 = None
         self.is_episode_done = False
 
+        self.old_board = None
+
         self._setup_env()
 
     def _setup_env(self):
@@ -71,9 +74,12 @@ class SelfPlayTester:
     def reset(self):
         self.env.reset()
 
-    def step(self):
+    def step(self, action=None):
         self.env.render()
-        action = self.player_0.choose_action(self.env, choose_best_action=True, mask_invalid_actions=True)
+
+
+        if action is None:
+            action = self.player_0.choose_action(self.env, choose_best_action=True, mask_invalid_actions=True)
 
         obs, reward, self.is_episode_done, _ = self.env.unwrapped.step(action)
 

@@ -36,6 +36,7 @@ class TicTacToeEnv(gym.Env):
         self.verbose = verbose
 
         self.fig = None
+        self.ax = None
 
     @property
     def observation(self):
@@ -118,6 +119,11 @@ class TicTacToeEnv(gym.Env):
             reward = [-r, -r]
             reward[self.current_player_num] = r
 
+        if self.current_player_num == 0:
+            self.player_0_last_move = action
+        else:
+            self.player_1_last_move = action
+
         self.done = done
 
         if not done:
@@ -133,6 +139,29 @@ class TicTacToeEnv(gym.Env):
         self.done = False
         logger.debug(f'\n\n---- NEW GAME ----')
         return self.observation
+
+    def _make_axis(self, ax=None):
+        if ax is None:
+            self.fig, self.ax = plt.subplots(1, 1)
+
+        self.xplot, = self.ax.plot([], [], 'x', linestyle=None, markersize=20)
+        self.oplot, = self.ax.plot([], [], 'o', linestyle=None, markersize=20, markerfacecolor='none')
+        self.ax.set_xlim(-0.5, 2.5)
+        self.ax.set_ylim(-0.5, 2.5)
+        self.ax.invert_yaxis()
+
+        grid_space = np.linspace(-0.5, 2.5, 4)
+
+        self.ax.set_xticks(grid_space)
+        self.ax.set_yticks(grid_space)
+        self.ax.set_xticks(grid_space, minor=True)
+        self.ax.set_yticks(grid_space, minor=True)
+
+        self.ax.grid(which="major", alpha=0.6)
+        self.ax.grid(which="minor", alpha=0.3)
+
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
 
     def render(self, mode='human', close=False, verbose=True):
         logger.debug('')
@@ -163,26 +192,8 @@ class TicTacToeEnv(gym.Env):
 
             print(board.reshape((3, 3)))
         elif self.render_mode == "plot":
-            if self.fig is None:
-                self.fig, self.ax = plt.subplots(1, 1)
-                self.xplot, = self.ax.plot([], [], 'x', linestyle=None, markersize=20)
-                self.oplot, = self.ax.plot([], [], 'o', linestyle=None, markersize=20, markerfacecolor='none')
-                self.ax.set_xlim(-0.5, 2.5)
-                self.ax.set_ylim(-0.5, 2.5)
-                self.ax.invert_yaxis()
-
-                grid_space = np.linspace(-0.5, 2.5, 4)
-
-                self.ax.set_xticks(grid_space)
-                self.ax.set_yticks(grid_space)
-                self.ax.set_xticks(grid_space, minor=True)
-                self.ax.set_yticks(grid_space, minor=True)
-
-                self.ax.grid(which="major", alpha=0.6)
-                self.ax.grid(which="minor", alpha=0.3)
-
-                self.ax.set_xticks([])
-                self.ax.set_yticks([])
+            if self.ax is None:
+                self._make_axis()
 
             board = np.empty(9, dtype=int)
             for i, tile in enumerate(self.board.copy()):

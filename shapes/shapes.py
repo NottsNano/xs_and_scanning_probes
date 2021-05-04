@@ -27,7 +27,7 @@ class DataShape(object):
 
         self.datafile = None
 
-        self.centre_offset = None
+        self.centre_offset = [0, 0]
         self.size = None
         self.datapoints = []
 
@@ -49,30 +49,31 @@ class DataShape(object):
     def _add_datapoint(self, xy, desorb_on_approach):
         self.datapoints.append(DataPoint(xy, desorb_on_approach))
 
-    def plot(self, ax=None):
+    def _make_axs(self, ax):
         if not ax:
             fig, ax = plt.subplots(1, 1)
+        padding = self.size // 50
+        ax.set_xlim(-padding, self.size + padding)
+        ax.set_ylim(-padding, self.size + padding)
+        ax.set_title(self.object_shape)
+        ax.set_aspect(1)
 
-            padding = self.size // 50
-            ax.set_xlim(-padding, self.size + padding)
-            ax.set_ylim(-padding, self.size + padding)
-            ax.set_title(self.object_shape)
-            ax.set_aspect(1)
+        return ax
+
+    def draw_in_stm(self, centre: np.ndarray([float, float])):
+        self.centre_offset = centre
+        raise NotImplementedError
+
+    def plot(self, ax=None):
+        if ax is None:
+            ax = self._make_axs(ax)
 
         for i in range(len(self.datapoints) - 1):
-            xs = [self.datapoints[i].pos[0], self.datapoints[i + 1].pos[0]]
-            ys = [self.datapoints[i].pos[1], self.datapoints[i + 1].pos[1]]
+            xs = np.array([self.datapoints[i].pos[0], self.datapoints[i + 1].pos[0]]) + self.centre_offset[0]
+            ys = np.array([self.datapoints[i].pos[1], self.datapoints[i + 1].pos[1]]) + self.centre_offset[1]
             if self.datapoints[i + 1].desorb_on_approach:
                 ax.plot(xs, ys, 'g')
             else:
                 ax.plot(xs, ys, 'r')
-
-    def int2mtrx(self):
-        pass  # convert from 0-512 to -1 - 1
-
-    def draw(self, pos):
-        """Draws the object, centered at pos"""
-        pass
-    # assert pos is int not mtrx coord!
 
 
