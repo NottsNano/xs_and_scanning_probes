@@ -77,15 +77,6 @@ class DataShape(object):
             pass
             # datapoint.move_to_point(desorb_voltage)
 
-        self.is_desorption_successful()
-
-    def is_desorption_successful(self, full_binary_image_old, full_binary_image_new):
-
-        if True:
-            warnings.warn(f"{self.object_shape} object may not have been drawn correctly!")
-
-        return bool(np.random.rand())
-
     def plot(self, ax=None):
         if ax is None:
             ax = self._make_axs(ax)
