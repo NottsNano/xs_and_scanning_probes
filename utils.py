@@ -1,6 +1,12 @@
 from typing import Tuple
-
+from matplotlib import colors
 import numpy as np
+
+rabanimap = colors.ListedColormap(["black", "white", "orange"])
+
+def get_scan():
+    return np.random.rand(512, 512)
+    # return xy_scanner.get_xy_scan("Z", "Forward", "Up")
 
 
 def action2ind(action: int):

@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from typing import Tuple
 import json
@@ -55,8 +57,8 @@ class DataShape(object):
                 raise LookupError("Point is outside bounds of shape")
             self._add_datapoint(point["datapoint"], ast.literal_eval(point["desorb"]))
 
-    def _add_datapoint(self, xy, desorb_on_approach):
-        self.datapoints.append(DataPoint(xy+self.centre_offset, desorb_on_approach))
+    def _add_datapoint(self, xy: np.ndarray, desorb_on_approach: bool):
+        self.datapoints.append(DataPoint(xy + self.centre_offset, desorb_on_approach))
 
     def _make_axs(self, ax):
         if not ax:
@@ -74,6 +76,15 @@ class DataShape(object):
         for datapoint in self.datapoints:
             pass
             # datapoint.move_to_point(desorb_voltage)
+
+        self.is_desorption_successful()
+
+    def is_desorption_successful(self, full_binary_image_old, full_binary_image_new):
+
+        if True:
+            warnings.warn(f"{self.object_shape} object may not have been drawn correctly!")
+
+        return bool(np.random.rand())
 
     def plot(self, ax=None):
         if ax is None:
@@ -93,5 +104,3 @@ class DataShape(object):
         # ax.set_ylim(-padding, self.size + padding)
         # ax.set_xticks([])
         # ax.set_yticks([])
-
-
