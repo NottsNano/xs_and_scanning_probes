@@ -10,18 +10,20 @@ from model.self_play_test import SelfPlayTester
 from shapes.shapes import DataShape
 
 # from nOmicron.microscope import IO, xy_scanner, black_box
-
+from nOmicron.mate import objects as mo
 
 
 class STMTicTacToe:
-    def __init__(self, scan_bias, desorption_bias,
-                 player_1_type="human", player_2_type="best", first_player="player_1", render_mode="plot"):
+    def __init__(self, scan_bias, scan_setpoint, desorption_bias,
+                 player_1_type="human", player_2_type="best", first_player="player_1", render_mode="plot", savefig=None):
         """Play noughts and crosses in STM using RL
 
         Parameters
         ----------
         scan_bias: float
             Scan voltage bias (Volts)
+        scan_setpoint: float
+            Scan setpoint current (Amps)
         desorption_bias: float
             Voltage to use during passivation (Volts)
         player_1_type: str
@@ -32,6 +34,8 @@ class STMTicTacToe:
             Who goes first. One of 'player_1' (default), 'player_2', 'random'
         render_mode: str or None
             How to render the game. One of 'plot' (default), 'print', None
+        savefig: str or None
+            If we should save each figure. Either None (default), or a path to a directory
         """
 
         # Connect to the probe
@@ -39,8 +43,9 @@ class STMTicTacToe:
 
         # STM parameters
         self.scan_bias = scan_bias
+        self.scan_setpoint = scan_setpoint
         self.desorption_bias = desorption_bias
-        self.num_coarse_moves_on_reset = 2
+        self.num_coarse_moves_on_reset = 5
 
         # Game parameters
         self.game = None
@@ -55,6 +60,8 @@ class STMTicTacToe:
         # Others
         self.fig = None
         self.axs = None
+        self.savefig = None
+        self.savefig_step = 0
 
         self.reset()
 
@@ -84,6 +91,9 @@ class STMTicTacToe:
         # Reset env
         self.game = SelfPlayTester(**self.game_args)
         self.preprocessor = ImagePreprocessing()
+
+        # mo.gap_voltage_control.Voltage(self.scan_bias)
+        # mo.regulator.Setpoint_1(self.scan_setpoint)
 
         # Coarse move random walk
         # black_box.backward()
@@ -117,15 +127,17 @@ class STMTicTacToe:
 
         # Setup figs
         self.fig, self.axs = plt.subplots(1, 4)
+        self.fig.set_size_inches(16, 6)
 
-        self.axs[0].set_title("Agent game")
-        self.axs[1].set_title("Desorption path")
-        self.axs[2].set_title("STM image")
-        self.axs[3].set_title("Binarised STM image")
-
+        self.axs[0].set_title("Game Board")
+        self.axs[1].set_title("Desorption Path")
+        self.axs[2].set_title("STM Image")
+        self.axs[3].set_title("Binarised STM Image")
         self.axs[1].invert_yaxis()
-        self.axs[1].set_xticks([])
-        self.axs[1].set_yticks([])
+
+        for i in range(4):
+            self.axs[i].set_xticks([])
+            self.axs[i].set_yticks([])
 
         self.game.env._make_axis(ax=self.axs[0])
         self.game.env.fig = self.fig
@@ -140,6 +152,10 @@ class STMTicTacToe:
         self.axs[2].imshow(scan_data, cmap=nanomap)
         self.axs[3].imshow(binary_data, cmap=utils.rabanimap)
         plt.pause(0.001)
+
+        if self.savefig:
+            plt.savefig(self.fig, f"{self.savefig}/tictactoe_{self.savefig_step}.png")
+            self.savefig_step += 1
 
 
 if __name__ == '__main__':
