@@ -15,20 +15,27 @@ class DataPoint(object):
         self.pos = pos
         self.desorb_on_approach = desorb_on_approach
 
-    def move_to_point(self, desorb_voltage=None):
-        mo.experiment.pause()
-
+    def move_to_point(self, desorb_voltage, desorb_current, t_raster, points):
+        # Store old parameters
         old_voltage = mo.gap_voltage_control.Voltage()
-        if self.desorb_on_approach and not desorb_voltage:
-            raise ValueError("If desorbing, descorb_voltage must be set")
+        old_current = mo.regulator.Setpoint_1()
+        old_raster = mo.xy_scanner.Raster_Time()
 
+        # Prep for movement
+        new_raster = t_raster * points / mo.xy_scanner.Points()
+        mo.xy_scanner.Raster_Time(new_raster)
         if self.desorb_on_approach:
             mo.gap_voltage_control.Voltage(desorb_voltage)
+            mo.regulator.Setpoint_1(desorb_current)
 
+        # Do movement
         mo.xy_scanner.Target_Position(ind2mtrx(self.pos))
         mo.xy_scanner.move()
 
+        # Reset
         mo.gap_voltage_control.Voltage(old_voltage)
+        mo.regulator.Setpoint_1(old_current)
+        mo.xy_scanner.Raster_Time(old_raster)
 
 
 class DataShape(object):
@@ -72,10 +79,11 @@ class DataShape(object):
 
         return ax
 
-    def draw_in_stm(self, desorb_voltage):
+    def draw_in_stm(self, desorb_voltage, desorb_current, t_raster, points):
+        mo.experiment.pause()
         for datapoint in self.datapoints:
-            pass
-            # datapoint.move_to_point(desorb_voltage)
+            datapoint.move_to_point(desorb_voltage, desorb_current, t_raster, points)
+        mo.experiment.resume()
 
     def plot(self, ax=None):
         if ax is None:

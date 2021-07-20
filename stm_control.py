@@ -2,20 +2,21 @@ import warnings
 
 import numpy as np
 from matplotlib import pyplot as plt
+from nOmicron.mate import objects as mo
+from nOmicron.microscope import IO, black_box
 from nOmicron.utils.plotting import nanomap
 
 import utils
 from binarisation import ImagePreprocessing
+from model.classify import EnsembleClassifier
 from model.self_play_test import SelfPlayTester
 from shapes.shapes import DataShape
 
-# from nOmicron.microscope import IO, xy_scanner, black_box
-from nOmicron.mate import objects as mo
-
 
 class STMTicTacToe:
-    def __init__(self, scan_bias, scan_setpoint, desorption_bias,
-                 player_1_type="human", player_2_type="best", first_player="player_1", render_mode="plot", savefig=None):
+    def __init__(self, scan_bias, scan_setpoint, desorption_bias, desorption_current, t_raster, raster_points,
+                 player_1_type="human", player_2_type="best", first_player="player_1", render_mode="plot",
+                 savefig=None):
         """Play noughts and crosses in STM using RL
 
         Parameters
@@ -26,6 +27,12 @@ class STMTicTacToe:
             Scan setpoint current (Amps)
         desorption_bias: float
             Voltage to use during passivation (Volts)
+        desorption_current: float
+            Current to use during passivation (Amps)
+        t_raster: float
+            Raster time for use during passivation (Seconds)
+        raster_points: int
+            Number of sub-points to use in passivation (to replicate atom manipulation window)
         player_1_type: str
             Player 1. One of 'best', 'mostly_best', 'random', 'human' (default), 'rules', '<model>.zip'
         player_2_type: str
@@ -39,12 +46,15 @@ class STMTicTacToe:
         """
 
         # Connect to the probe
-        # IO.connect()
+        IO.connect()
 
         # STM parameters
         self.scan_bias = scan_bias
         self.scan_setpoint = scan_setpoint
         self.desorption_bias = desorption_bias
+        self.desorption_current = desorption_current
+        self.t_raster = t_raster
+        self.raster_points = raster_points
         self.num_coarse_moves_on_reset = 5
 
         # Game parameters
@@ -56,6 +66,14 @@ class STMTicTacToe:
                           "auto_render": False}
 
         self.preprocessor = None
+
+        # CNN parameters
+        self.cnn_datadir = None
+        # self.
+        self.cnn_folder = None
+
+        self.ensemble_classifier = EnsembleClassifier(5, '29-12-19', ['CNN1DBatchnorm'], ['adam'], [0.001])
+        self.ensemble_classifier.load_models(rootdir="")
 
         # Others
         self.fig = None
@@ -70,11 +88,14 @@ class STMTicTacToe:
             self.step()
         self.game._announce_winner()
 
+    def CNN_assess(self):
+        raise NotImplementedError
+
     def step(self):
         action = self.game.player_0.choose_action(self.game.env, choose_best_action=True, mask_invalid_actions=True)
 
         cross_move = DataShape("cross", centre_offset=utils.action2ind(action))
-        cross_move.draw_in_stm(self.desorption_bias)
+        cross_move.draw_in_stm(self.desorption_bias, self.desorption_current)
         cross_image = utils.get_scan()
         binarised_cross_image = self.preprocessor.preprocess_and_binarise(cross_image)
         self.render(cross_image, binarised_cross_image, cross_move)
@@ -82,7 +103,7 @@ class STMTicTacToe:
         self.game.step(action)
 
         nought_move = DataShape("nought", centre_offset=utils.action2ind(self.game.env.player_1_last_move))
-        nought_move.draw_in_stm(self.desorption_bias)
+        nought_move.draw_in_stm(self.desorption_bias, self.desorption_current, self.t_raster, self.raster_points)
         nought_image = utils.get_scan()
         binarised_nought_image = self.preprocessor.preprocess_and_binarise(nought_image)
         self.render(nought_image, binarised_nought_image, nought_move)
@@ -92,28 +113,28 @@ class STMTicTacToe:
         self.game = SelfPlayTester(**self.game_args)
         self.preprocessor = ImagePreprocessing()
 
-        # mo.gap_voltage_control.Voltage(self.scan_bias)
-        # mo.regulator.Setpoint_1(self.scan_setpoint)
+        mo.gap_voltage_control.Voltage(self.scan_bias)
+        mo.regulator.Setpoint_1(self.scan_setpoint)
 
         # Coarse move random walk
-        # black_box.backward()
+        black_box.backward()
 
-        # for i in range(self.num_coarse_moves_on_reset):
-        # rand_coarse_move = np.random.rand()
-        # if 0 <= rand_coarse_move <= 0.25:
-        #     black_box.x_minus()
-        # elif 0.25 < rand_coarse_move <= 0.5:
-        #     black_box.x_plus()
-        # elif 0.5 < rand_coarse_move <= 0.75:
-        #     black_box.y_minus()
-        # else:
-        #     black_box.y_plus()
+        for i in range(self.num_coarse_moves_on_reset):
+            rand_coarse_move = np.random.rand()
+            if 0 <= rand_coarse_move <= 0.25:
+                black_box.x_minus()
+            elif 0.25 < rand_coarse_move <= 0.5:
+                black_box.x_plus()
+            elif 0.5 < rand_coarse_move <= 0.75:
+                black_box.y_minus()
+            else:
+                black_box.y_plus()
 
-        # black_box.auto_approach()
+        black_box.auto_approach()
 
         # Take a single scan
-        # prelim_scan = self.get_scan()
-        # plt.imshow(prelim_scan, cmap=nanomap, axs=self.axs[2])
+        prelim_scan = utils.get_scan()
+        plt.imshow(prelim_scan, cmap=nanomap, axs=self.axs[2])
 
         # Check if flat
         is_flat = True  # TODO
@@ -123,7 +144,7 @@ class STMTicTacToe:
 
         # Draw grid
         grid = DataShape("board")
-        grid.draw_in_stm(desorb_voltage=self.desorption_bias)
+        grid.draw_in_stm(desorb_voltage=self.desorption_bias, desorb_current=self.desorption_current)
 
         # Setup figs
         self.fig, self.axs = plt.subplots(1, 4)
@@ -160,5 +181,7 @@ class STMTicTacToe:
 
 if __name__ == '__main__':
     # Parse args
-    game = STMTicTacToe(scan_bias=0, desorption_bias=0)
+    game = STMTicTacToe(scan_bias=-1.63, scan_setpoint=0.08e-9,
+                        desorption_bias=2.6, desorption_current=800e-12,
+                        t_raster=10e-3, raster_points=256)
     game.play_game()

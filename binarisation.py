@@ -80,7 +80,3 @@ class ImagePreprocessing:
         binarised = arr > threshes
 
         return binarised
-
-
-if __name__ == '__main__':
-    pass
