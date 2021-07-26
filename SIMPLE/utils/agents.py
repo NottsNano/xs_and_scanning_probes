@@ -36,6 +36,7 @@ class Agent:
 
     def choose_action(self, env, choose_best_action, mask_invalid_actions):
         if self.name == 'human':
+            act_str = '\nPlease choose an action: '
             if env.render_mode is "print":
                 while True:
                     try:
@@ -44,6 +45,7 @@ class Agent:
                     except ValueError:
                         pass
             else:
+                print(act_str)
                 co_ords = np.array(env.fig.ginput(n=1, timeout=99999999)).ravel()
                 # all_sites = np.array(list(product([0, 1, 2], repeat=2)))
                 all_sites = np.array([[0, 0],

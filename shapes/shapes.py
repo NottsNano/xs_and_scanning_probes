@@ -1,4 +1,5 @@
 import warnings
+from time import sleep
 
 import numpy as np
 from typing import Tuple
@@ -14,6 +15,7 @@ class DataPoint(object):
     def __init__(self, pos: Tuple[int, int], desorb_on_approach: bool):
         self.pos = pos
         self.desorb_on_approach = desorb_on_approach
+        self.piece_scale = 0.75
 
     def move_to_point(self, desorb_voltage, desorb_current, t_raster, points):
         # Store old parameters
@@ -29,8 +31,11 @@ class DataPoint(object):
             mo.regulator.Setpoint_1(desorb_current)
 
         # Do movement
-        mo.xy_scanner.Target_Position(ind2mtrx(self.pos))
+        target_pos = np.array((ind2mtrx(self.pos)))
+        mo.xy_scanner.Target_Position(list(target_pos * self.piece_scale))
         mo.xy_scanner.move()
+
+        sleep(1.3 * t_raster * points)
 
         # Reset
         mo.gap_voltage_control.Voltage(old_voltage)
@@ -80,10 +85,11 @@ class DataShape(object):
         return ax
 
     def draw_in_stm(self, desorb_voltage, desorb_current, t_raster, points):
-        mo.experiment.pause()
+        # mo.experiment.stop()
+        print(f"Drawing {self.object_shape}")
         for datapoint in self.datapoints:
             datapoint.move_to_point(desorb_voltage, desorb_current, t_raster, points)
-        mo.experiment.resume()
+        # mo.experiment.resume()
 
     def plot(self, ax=None):
         if ax is None:
